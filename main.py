@@ -20,18 +20,18 @@ def display_word(word, guessed_letters):
     return display.strip()
 
 def draw_hangman(screen, attempts):
-    base = pygame.Rect(50, 300, 200, 20)
-    pole = pygame.Rect(140, 50, 20, 250)
-    beam = pygame.Rect(50, 50, 150, 20)
-    rope = pygame.Rect(180, 50, 2, 50)
+    base = pygame.Rect(100, 450, 400, 30)
+    pole = pygame.Rect(240, 100, 30, 350)
+    beam = pygame.Rect(100, 100, 300, 30)
+    rope = pygame.Rect(370, 100, 5, 75)
 
     parts = [
-        pygame.Rect(160, 100, 40, 40),  # Head
-        pygame.Rect(180, 140, 2, 60),   # Body
-        pygame.Rect(180, 140, 50, 2),   # Right Arm
-        pygame.Rect(130, 140, 50, 2),   # Left Arm
-        pygame.Rect(180, 200, 2, 50),   # Right Leg
-        pygame.Rect(180, 200, -2, 50)   # Left Leg
+        pygame.Rect(345, 175, 50, 50),  # Head
+        pygame.Rect(365, 225, 5, 100),  # Body
+        pygame.Rect(365, 225, 75, 5),   # Right Arm
+        pygame.Rect(290, 225, 75, 5),   # Left Arm
+        pygame.Rect(365, 325, 5, 75),   # Right Leg
+        pygame.Rect(365, 325, -5, 75)   # Left Leg
     ]
 
     pygame.draw.rect(screen, (0, 0, 0), base)
@@ -42,24 +42,31 @@ def draw_hangman(screen, attempts):
     for i in range(6 - attempts):
         pygame.draw.rect(screen, (0, 0, 0), parts[i])
 
-# Main function for the game
 def hangman():
     pygame.init()
-    screen = pygame.display.set_mode((400, 400))
+    screen = pygame.display.set_mode((800, 600))
     pygame.display.set_caption("Hangman")
 
-    word = fetch_random_word()
-    if word is None:
-        print("Failed to fetch a random word. Please try again.")
-        return
+    global word, guessed_letters, attempts, game_over, round_counter
 
-    guessed_letters = []
-    attempts = 6
-    font = pygame.font.Font(None, 36)
-    game_over = False
+    def reset_game():
+        global word, guessed_letters, attempts, game_over, round_counter
+        word = fetch_random_word()
+        if word is None:
+            print("Failed to fetch a random word. Please try again.")
+            return
+        guessed_letters = []
+        attempts = 6
+        game_over = False
+        round_counter += 1
+
+    round_counter = 0
+    reset_game()
+
+    font = pygame.font.Font(None, 48)
     clock = pygame.time.Clock()
 
-    while not game_over:
+    while True:
         screen.fill((255, 255, 255))
 
         for event in pygame.event.get():
@@ -67,30 +74,39 @@ def hangman():
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
-                guess = pygame.key.name(event.key)
-                if guess.isalpha() and len(guess) == 1:
-                    if guess in guessed_letters:
-                        print("You already guessed that letter.")
-                    elif guess in word:
-                        guessed_letters.append(guess)
-                        print("Good guess!")
-                    else:
-                        guessed_letters.append(guess)
-                        attempts -= 1
-                        print("Wrong guess. Attempts left:", attempts)
+                if game_over:
+                    if event.key == pygame.K_r:
+                        reset_game()
+                else:
+                    guess = pygame.key.name(event.key)
+                    if guess.isalpha() and len(guess) == 1:
+                        if guess in guessed_letters:
+                            print("You already guessed that letter.")
+                        elif guess in word:
+                            guessed_letters.append(guess)
+                            print("Good guess!")
+                        else:
+                            guessed_letters.append(guess)
+                            attempts -= 1
+                            print("Wrong guess. Attempts left:", attempts)
 
         word_display = display_word(word, guessed_letters)
         text = font.render(word_display, True, (0, 0, 0))
-        screen.blit(text, (50, 350))
+        screen.blit(text, (100, 500))
+
+        round_text = font.render(f"Round: {round_counter}", True, (0, 0, 0))
+        screen.blit(round_text, (100, 50))
 
         draw_hangman(screen, attempts)
 
         if '_' not in display_word(word, guessed_letters):
             game_over = True
-            print("Congratulations, you won!")
+            end_text = font.render("Congratulations, you won! Press R to restart.", True, (0, 255, 0))
+            screen.blit(end_text, (100, 100))
         elif attempts == 0:
             game_over = True
-            print("Sorry, you lost. The word was:", word)
+            end_text = font.render(f"The word was '{word}'. Press R to restart.", True, (255, 0, 0))
+            screen.blit(end_text, (100, 100))
 
         pygame.display.flip()
         clock.tick(30)
